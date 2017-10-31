@@ -18,7 +18,8 @@
  
  microSD breakout board wiring:
  GND to ground
- 5V to 5V
+ 5V to 5V`+
+ 
  CLK to pin 13
  DO to pin 12
  DI to pin 11
@@ -32,7 +33,22 @@
 
 #include <Wire.h> // needed for i2c communication
 
-#define LOG_INTERVAL  500 // 60000 milliseconds (1 min) between entries
+// RGB LCD Shield Library
+#include <Adafruit_RGBLCDShield.h>
+#include <utility/Adafruit_MCP23017.h>
+
+Adafruit_RGBLCDShield lcd = Adafruit_RGBLCDShield();
+
+// Define colors for LCD Shield
+#define RED 0x1
+#define YELLOW 0x3
+#define GREEN 0x2
+#define TEAL 0x6
+#define BLUE 0x4
+#define VIOLET 0x5
+#define WHITE 0x7
+
+#define LOG_INTERVAL  1000 // 60000 milliseconds (1 min) between entries
 #define ECHO_TO_SERIAL   1 // print data to serial port (use 0 to disable)
 
 // ========== Chronodot ==========
@@ -60,6 +76,9 @@ HIH61XX hih(0x27, 8);
 void setup(){
   Serial.begin(9600); // initialize the serial monitor
   Wire.begin(); // initialize the wire library
+  lcd.begin(16,2);
+
+  lcd.print("Hello!");
 
   // ----------------- initialize bmp180 pressure sensor ------------------
   if (!bmp.begin()) {
