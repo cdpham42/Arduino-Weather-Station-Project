@@ -1,12 +1,18 @@
 /*
- ATMS 315 - All Sensors Example Code
- August 2014
- AJB
+ Original code from ATMS 315, University of Illinois, 2014
+ 
+ Credit:
+ Adam J. Burns
+ atmos@aburns.us
  
  ==================================================================
  This sketch is designed to read and log sensor readings from the 
  tmp102 temperature sensor, bmp180 pressure sensor, and HIH6130
  humidity sensor with timestamps (chronodot) to a microSD card. 
+
+ Additions beyond this are separate from the original project code.
+ Additions include RGB LCD Shield output, variable calculations
+ beyond sensor reading, and output formatting.
  ==================================================================
  
  Designed for:
@@ -25,9 +31,6 @@
  DI to pin 11
  CS to pin 10 (*for Arduino Uno only*)
  
- 
- Adam J. Burns
- atmos@aburns.us
  */
 
 
