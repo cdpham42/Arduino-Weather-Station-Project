@@ -80,7 +80,7 @@ Adafruit_BMP085 bmp;
 HIH61XX hih(0x27, 8);
 
 
-//================================== setup function =========================================
+//================================== START SETUP =========================================
 void setup(){
   
   Serial.begin(9600); // initialize the serial monitor
@@ -157,11 +157,11 @@ void setup(){
 
 }
 
-//================================ end setup function =======================================
+//================================ END SETUP =======================================
 
 
 
-//================================ loop function ============================================
+//================================ START LOOP ============================================
 
 void loop(){
   
@@ -205,14 +205,18 @@ void loop(){
 
 #if LCD_PRINT
 
-  lcd.clear();
-  lcd.setCursor(0,0);
-  lcd.print("Temp: ");
-  lcd.print(HIHtempF);
+  uint8_t buttons = lcd.readButtons();
 
-  lcd.setCursor(0,1);
-  lcd.print("DewPoint: ");
-  lcd.print(dewpointF);
+  if (buttons & BUTTON_UP)  {
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Temp: ");
+    lcd.print(HIHtempF);
+  
+    lcd.setCursor(0,1);
+    lcd.print("DewPoint: ");
+    lcd.print(dewpointF);
+  }
 
 # endif
  
@@ -304,7 +308,7 @@ void loop(){
   delay(LOG_INTERVAL); // delay between each reading
   
 }
-//================================ end loop function =======================================
+//================================ END LOOP =======================================
 
 
 
