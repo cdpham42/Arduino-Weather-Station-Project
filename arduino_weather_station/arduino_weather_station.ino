@@ -57,7 +57,7 @@ Adafruit_RGBLCDShield lcd = Adafruit_RGBLCDShield();
 
 #define LOG_INTERVAL  50 // 60000 milliseconds (1 min) between entries
 #define LOG_TO_FILE   0 // Log data to file (use 0 to disable)
-#define ECHO_TO_SERIAL   1 // print data to serial port (use 0 to disable)
+#define ECHO_TO_SERIAL   0 // print data to serial port (use 0 to disable)
 #define LCD_PRINT   1 // Print to LCD
 
 // ========== Chronodot ==========
@@ -80,11 +80,33 @@ Adafruit_BMP085 bmp;
 #include <HIH61XX.h>
 HIH61XX hih(0x27, 8);
 
-//RGB LCD Shield
-long start_time = 0;
+// ========== RGB LCD Shield ==========
+long start_time = 0;    // start and end times to auto turn-off the display
 long end_time = 0;
-bool on = false;
-int button = 0;
+bool on = false;        // bool for on/off for updating while on
+int button = 0;         // to know which button was pressed to correctly update display while on
+
+// ========== Initialize Variables ==========
+
+float bmpTemp = 0;
+float bmpPressure = 0;
+float bmpTempF = 0;
+
+float HIHtemp = 0;
+float humidity = 0;
+float HIHtempF =0;
+
+// ======== Calculate Dew Point using Arden Buck Equation using HIHtemp ========
+
+// Constant values from Arden Buck for temperature range 0C <= T <= 50C
+float a = 6.1121;
+float b = 17.368;
+float c = 238.88;
+float d = 234.5;
+
+float gamma_m = 0;
+float dewpoint = 0;
+float dewpointF = 0;
 
 
 //================================== START SETUP =========================================
@@ -188,29 +210,26 @@ void loop(){
 
   // ======== read BMP180 pressure sensor readings (temp [C] & pressure [Pa]) ========
 
-  float bmpTemp = bmp.readTemperature();
-  float bmpPressure = bmp.readPressure();
-  float bmpTempF = bmpTemp * 9/5 + 32;
+if (on){
+  bmpTemp = bmp.readTemperature();
+  bmpPressure = bmp.readPressure();
+  bmpTempF = bmpTemp * 9/5 + 32;
   
   // ======== read HIH6130 sensor readings (temp [C] & RH[%]) ========
   hih.start();
   hih.update(); //  request an update of the humidity and temperature
-  float HIHtemp=(hih.temperature());
-  float humidity=((hih.humidity())*100);
-  float HIHtempF = HIHtemp * 9/5 + 32;
+  HIHtemp=(hih.temperature());
+  humidity=((hih.humidity())*100);
+  HIHtempF = HIHtemp * 9/5 + 32;
 
   // ======== Calculate Dew Point using Arden Buck Equation using HIHtemp ========
 
   // Constant values from Arden Buck for temperature range 0C <= T <= 50C
-  float a = 6.1121;
-  float b = 17.368;
-  float c = 238.88;
-  float d = 234.5;
 
-  float gamma_m = log( (humidity / 100) * exp( (b-HIHtemp/d) *  (HIHtemp/(c + HIHtemp)) ) );
-  float dewpoint = (c * gamma_m) / (b - gamma_m);
-  float dewpointF = dewpoint * 9/5 + 32;
-
+  gamma_m = log( (humidity / 100) * exp( (b-HIHtemp/d) *  (HIHtemp/(c + HIHtemp)) ) );
+  dewpoint = (c * gamma_m) / (b - gamma_m);
+  dewpointF = dewpoint * 9/5 + 32;
+}
   // ================================ LCD Shield Input and Output ================================
 
   // Use Chronodot second recordign to create timer for display auto-off instead of attempting to iterate through loops
