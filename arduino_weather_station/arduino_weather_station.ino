@@ -53,8 +53,9 @@ Adafruit_RGBLCDShield lcd = Adafruit_RGBLCDShield();
 #define BLUE 0x4
 #define VIOLET 0x5
 #define WHITE 0x7
+#define BLACK 0x0
 
-#define LOG_INTERVAL  1000 // 60000 milliseconds (1 min) between entries
+#define LOG_INTERVAL  50 // 60000 milliseconds (1 min) between entries
 #define LOG_TO_FILE   0 // Log data to file (use 0 to disable)
 #define ECHO_TO_SERIAL   1 // print data to serial port (use 0 to disable)
 #define LCD_PRINT   1 // Print to LCD
@@ -65,11 +66,11 @@ RTC_DS1307 RTC; // create an instance called "RTC" for the chronodot
 boolean initialrun = true;
 
 // ========== microSD ==========
-#include <SD.h>
-const int chipSelect = 10; // SD cs line on D10
-File logfile; // log file
-long unixInitial=0;
-long unixNet=0;
+  #include <SD.h>
+  const int chipSelect = 10; // SD cs line on D10
+  File logfile; // log file
+  long unixInitial = 0;
+  long unixNet = 0;
 
 // ========== bmp180 ==========
 #include <Adafruit_BMP085.h>
@@ -78,6 +79,12 @@ Adafruit_BMP085 bmp;
 // ========== HIH6130 ==========
 #include <HIH61XX.h>
 HIH61XX hih(0x27, 8);
+
+//RGB LCD Shield
+long start_time = 0;
+long end_time = 0;
+bool on = false;
+int button = 0;
 
 
 //================================== START SETUP =========================================
@@ -157,6 +164,7 @@ void setup(){
 
 }
 
+
 //================================ END SETUP =======================================
 
 
@@ -164,20 +172,22 @@ void setup(){
 //================================ START LOOP ============================================
 
 void loop(){
-  
+
   // ========== get the time ==========
   DateTime now;
   now = RTC.now();
 
   // ========== check to see if this is the first run ==========
   if(initialrun){
-    unixInitial=now.unixtime();
-    initialrun=false;
+    unixInitial = now.unixtime();
+    start_time = now.unixtime();
+    initialrun = false;
   }
 
   // ================================ Read Sensor Data and Calculate Values ================================
 
   // ======== read BMP180 pressure sensor readings (temp [C] & pressure [Pa]) ========
+
   float bmpTemp = bmp.readTemperature();
   float bmpPressure = bmp.readPressure();
   float bmpTempF = bmpTemp * 9/5 + 32;
@@ -203,20 +213,172 @@ void loop(){
 
   // ================================ LCD Shield Input and Output ================================
 
+  // Use Chronodot second recordign to create timer for display auto-off instead of attempting to iterate through loops
+
 #if LCD_PRINT
 
   uint8_t buttons = lcd.readButtons();
+  int lcd_off = 10000 / LOG_INTERVAL;     // 10 seconds divided by log_interval to get number of loops until screen off
 
+  // Show Temp and Humidity in Fahrenheit
   if (buttons & BUTTON_UP)  {
+
+    start_time = now.unixtime();
+    end_time = start_time + 10;
+    button = 1;
+    
     lcd.clear();
+    lcd.setBacklight(WHITE);
     lcd.setCursor(0,0);
     lcd.print("Temp: ");
     lcd.print(HIHtempF);
+    lcd.print("F");
   
     lcd.setCursor(0,1);
     lcd.print("DewPoint: ");
     lcd.print(dewpointF);
+    lcd.print("F");
+
+    on = true;
+    
   }
+
+  // Show Temp and Humidity in Celsius
+  if (buttons & BUTTON_LEFT){
+    
+    start_time = now.unixtime();
+    end_time = start_time + 10;
+    button = 2;
+    
+    lcd.clear();
+    lcd.setBacklight(BLUE);
+    lcd.setCursor(0,0);
+    lcd.print("Temp: ");
+    lcd.print(HIHtemp);
+    lcd.print("C");
+  
+    lcd.setCursor(0,1);
+    lcd.print("DewPoint: ");
+    lcd.print(dewpoint);
+    lcd.print("C");
+
+    on = true;
+    
+  }
+
+  // Show HIH Temp and BMP Temp in Fahrenheit
+  if (buttons & BUTTON_RIGHT){
+    
+    start_time = now.unixtime();
+    end_time = start_time + 10;
+    button = 3;
+    
+    lcd.clear();
+    lcd.setBacklight(RED);
+    lcd.setCursor(0,0);
+    lcd.print("HIH Temp: ");
+    lcd.print(HIHtemp);
+    lcd.print("C");
+  
+    lcd.setCursor(0,1);
+    lcd.print("BMP Temp: ");
+    lcd.print(bmpTemp);
+    lcd.print("C");
+
+    on = true;
+    
+  }
+
+  // Show Pressure
+  if (buttons & BUTTON_DOWN){
+    
+    start_time = now.unixtime();
+    end_time = start_time + 10;
+    button = 4;
+    
+    lcd.clear();
+    lcd.setBacklight(GREEN);
+    lcd.setCursor(0,0);
+    lcd.print("Pressure: ");
+    lcd.print(bmpPressure/100);
+
+    on = true;
+    
+  }
+
+  if (buttons & BUTTON_SELECT){
+
+    if (on){ 
+       
+    lcd.clear();
+    lcd.setBacklight(0x0);
+
+    on = false;
+    }
+    
+  }
+
+  if (on){
+    if (now.unixtime() != end_time){
+
+      // If BUTTON_UP is on
+      if (button == 1){
+        lcd.setCursor(0,0);
+        lcd.print("Temp: ");
+        lcd.print(HIHtempF);
+        lcd.print("F");
+        
+        lcd.setCursor(0,1);
+        lcd.print("DewPoint: ");
+        lcd.print(dewpointF);
+        lcd.print("F");
+      }
+
+      // If BUTTON_LEFT is on
+      if (button == 2){
+        lcd.setCursor(0,0);
+        lcd.print("Temp: ");
+        lcd.print(HIHtemp);
+        lcd.print("C");
+    
+        lcd.setCursor(0,1);
+        lcd.print("DewPoint: ");
+        lcd.print(dewpoint);
+        lcd.print("C");
+      }
+
+      // If BUTTON_RIGHT is on
+      if (button == 3){
+        lcd.setCursor(0,0);
+        lcd.print("HIH Temp: ");
+        lcd.print(HIHtempF);
+        lcd.print("F");
+  
+        lcd.setCursor(0,1);
+        lcd.print("BMP Temp: ");
+        lcd.print(bmpTempF);
+        lcd.print("F");
+      }
+
+      // If BUTTON_DOWN is on
+      if (button == 4){
+        lcd.setCursor(0,0);
+        lcd.setCursor(0,0);
+        lcd.print("Pressure: ");
+        lcd.print(bmpPressure/100);
+      }
+
+      
+      
+    }
+    
+    if (now.unixtime() == end_time){
+      lcd.clear();
+      lcd.setBacklight(BLACK);
+      on = false;
+    }
+    
+  } 
 
 # endif
  
@@ -301,7 +463,11 @@ void loop(){
   Serial.print(dewpoint);
   Serial.print(" C, ");
   Serial.print(dewpointF);
-  Serial.println(" F");
+  Serial.print(" F, ");
+  
+  Serial.print(start_time);
+  Serial.print(", ");
+  Serial.println(end_time);
   
 #endif //ECHO_TO_SERIAL
 
